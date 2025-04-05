@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magazin Dash</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .product-card {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 1px solid #28a745;
+        }
+        .btn-green {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+        }
+        .btn-green:hover {
+            background-color: #218838;
+        }
+        .cart {
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid #28a745;
+        }
+        .cart button {
+            margin-top: 10px;
+            width: 100%;
+        }
+        .quantity-input {
+            width: 60px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .orders {
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid #17a2b8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="text-center">📦 Mahsulotlari</h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="row">
+                {% for i in prods %}
+                <div class="col-md-6">
+                    <div class="product-card">
+                        <h3>{{ i.name }}</h3>
+                        <p><strong>Qolgan:</strong> {{ i.quantity }} dona</p>
+                        <input type="number" class="quantity-input form-control" id="qty-{{i.id}}" value="1" min="1" max="{{i.quantity}}">
+                        <button class="btn-green mt-2" onclick="addToCart('{{i.id}}', '{{ i.name|escapejs }}','{{i.quantity}}', '{{i.quantity}}')">🛒 Savatga</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center">Mahsulotlar mavjud emas.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="cart">
+                <h3>🛍 Savat</h3>
+                <ul id="cart-items" class="list-unstyled">
+                    {% for key,i in cart.items %}
+                    <li>🛒 {{i.name}} x{{i.quantity}} = {{i.total}} so'm <a href="{% url 'delete' key %}">O‘chirish</a></li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'home' %}" class="btn btn-primary" style="width: 100%;">Yangilash</a>
+                <button class="btn btn-danger" onclick="clearCart()">🗑 Savatni tozalash</button>
+                <a href="{% url 'submit' %}" class="btn btn-secondary"  style="width: 100%;margin-top: 10px;">Yakunlash</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="orders">
+        <h3>📜 Oldingi Buyurtmalar</h3>
+        {% for order in orders %}
+        <p><strong>Buyurtma ID:</strong> {{ order.order_id }} | <strong>Summa:</strong> {{ order.total_price }} so'm  | <strong>Vaqt:</strong> {{ order.created_at }} so'm</p>
+        {% empty %}
+        <p>Hech qanday buyurtma yo‘q.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+function addToCart(product_id, product_name,prod_quant, max_quantity) {
+    let quantity = document.getElementById("qty-" + product_id).value;
+    if (quantity < 1) {
+        alert("Miqdor noto‘g‘ri!");
+        return;
+    }
+    if (parseInt(quantity) <= parseInt(max_quantity)){
+        $.ajax({
+        type: "POST",
+        url: "{% url 'add_cart' %}",
+        data: {
+            product_id: product_id,
+            quantity: quantity,
+            csrfmiddlewaretoken: '{{ csrf_token }}',
+            action: 'post'
+        },
+        error: function(xhr) {
+            alert("Xatolik yuz berdi: " + xhr.responseText);
+        }
+    });
+    }
+
+    
+}
+
+function clearCart() {
+    $.ajax({
+        type: "POST",
+        url: "{% url 'clean_cart' %}",
+        data: {
+            csrfmiddlewaretoken: '{{ csrf_token }}',
+            action: 'post'
+        },
+        success: function(result) {
+            location.reload();
+        }
+    });
+}
+</script>
+
+</body>
+</html>
